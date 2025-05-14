@@ -1,3 +1,5 @@
+from stats import count_words_book, count_characters_book
+
 def get_book_text(bookpath):
     """
     Extracts the text from a book object.
@@ -14,16 +16,14 @@ def get_book_text(bookpath):
     # do something with f (the file) here
     return book_text
 
-def count_words_book(book):
-    words_list=[]
-    words_list=book.split()
-    return len(words_list)
 
 
 def main():
     frankenstein_book=get_book_text("/home/workspace/github.com/interzone2001/bookbot/books/frankenstein.txt")
     num_words=count_words_book(frankenstein_book)
     print(f"{num_words} words found in the document")
+    num_characters=count_characters_book(frankenstein_book)
+    print(num_characters)
 
 main()
 
