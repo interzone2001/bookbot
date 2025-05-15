@@ -10,4 +10,10 @@ def count_characters_book(book):
         character_count[char] = character_count.get(char, 0) + 1
     return character_count
 
-    
+def count_characters_sorted(character_count):
+    char_list=[]
+    for k,v in character_count.items():
+	    char_list.append({"char":k,"num":v})
+    char_list.sort(key=lambda x: x["num"], reverse=True)
+    return char_list
+

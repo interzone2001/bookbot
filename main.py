@@ -1,4 +1,4 @@
-from stats import count_words_book, count_characters_book
+from stats import count_words_book, count_characters_book, count_characters_sorted
 
 def get_book_text(bookpath):
     """
@@ -19,11 +19,22 @@ def get_book_text(bookpath):
 
 
 def main():
-    frankenstein_book=get_book_text("/home/workspace/github.com/interzone2001/bookbot/books/frankenstein.txt")
+    book_path="/home/workspace/github.com/interzone2001/bookbot/books/frankenstein.txt"
+    frankenstein_book=get_book_text(book_path)
     num_words=count_words_book(frankenstein_book)
-    print(f"{num_words} words found in the document")
     num_characters=count_characters_book(frankenstein_book)
-    print(num_characters)
-
+    sorted_characters=count_characters_sorted(num_characters)
+    print("============ BOOKBOT ============")
+    print(f"Analyzing book found at {book_path}...")
+    print("----------- Word Count ----------")
+    print(f"Found {num_words} total words")
+    print("--------- Character Count -------")
+    for char in sorted_characters:
+        c=char["char"]
+        n=char["num"]
+        if c.isalpha():
+            print(f"{c}: {n}")
+    print("============= END ===============")    
+            
 main()
 
