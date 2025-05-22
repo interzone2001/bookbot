@@ -1,6 +1,7 @@
 from stats import count_words_book, count_characters_book, count_characters_sorted, get_random_sentence
 import sys
 import argparse
+import json
 
 def get_book_text(bookpath):
     """
@@ -37,6 +38,29 @@ def output_random_sentence(book):
     sentence = get_random_sentence(book)
     print(f'"{sentence}"')
 
+def output_json(book, book_path):
+    num_words = count_words_book(book)
+    num_characters = count_characters_book(book)
+    sorted_characters = count_characters_sorted(num_characters)
+    random_sentence = get_random_sentence(book)
+    
+    # Filter to only alphabetical characters for JSON output
+    char_frequencies = {}
+    for char in sorted_characters:
+        c = char["char"]
+        n = char["num"]
+        if c.isalpha():
+            char_frequencies[c] = n
+    
+    result = {
+        "file": book_path,
+        "word_count": num_words,
+        "character_frequencies": char_frequencies,
+        "random_sentence": random_sentence
+    }
+    
+    print(json.dumps(result, indent=2))
+
 def output_all(book, book_path):
     num_words = count_words_book(book)
     num_characters = count_characters_book(book)
@@ -62,6 +86,7 @@ def main():
     parser.add_argument("--word-count", action="store_true", help="Show word count only")
     parser.add_argument("--char-count", action="store_true", help="Show character frequency only")
     parser.add_argument("--random-sentence", action="store_true", help="Show random sentence only")
+    parser.add_argument("--json", action="store_true", help="Output all analysis as JSON")
     parser.add_argument("--all", action="store_true", help="Show complete analysis (default)")
     
     args = parser.parse_args()
@@ -76,7 +101,7 @@ def main():
         sys.exit(1)
     
     # If no specific flags are set, default to --all
-    if not any([args.word_count, args.char_count, args.random_sentence, args.all]):
+    if not any([args.word_count, args.char_count, args.random_sentence, args.json, args.all]):
         args.all = True
     
     if args.word_count:
@@ -85,6 +110,8 @@ def main():
         output_char_count(book)
     elif args.random_sentence:
         output_random_sentence(book)
+    elif args.json:
+        output_json(book, args.file)
     elif args.all:
         output_all(book, args.file)
 
