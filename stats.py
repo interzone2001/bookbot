@@ -17,3 +17,12 @@ def count_characters_sorted(character_count):
     char_list.sort(key=lambda x: x["num"], reverse=True)
     return char_list
 
+def get_random_sentence(book):
+    import random
+    import re
+    sentences = re.split(r'[.!?]+', book)
+    sentences = [s.strip() for s in sentences if s.strip()]
+    if sentences:
+        return random.choice(sentences)
+    return "No sentences found."
+
