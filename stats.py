@@ -31,13 +31,50 @@ def get_top_words(book, count=20):
     # Convert to lowercase and extract words (letters only)
     words = re.findall(r'\b[a-zA-Z]+\b', book.lower())
     
-    # Common stop words to filter out
-    stop_words = {'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'shall', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'their', 'our', 'its', 'as', 'so', 'if', 'when', 'where', 'why', 'how', 'what', 'who', 'which', 'than', 'then', 'now', 'here', 'there', 'up', 'down', 'out', 'off', 'over', 'under', 'again', 'further', 'once', 'more', 'most', 'other', 'some', 'any', 'each', 'every', 'all', 'both', 'few', 'many', 'much', 'several', 'such', 'no', 'not', 'only', 'own', 'same', 'very', 'just', 'even', 'also', 'still', 'well', 'first', 'last', 'long', 'little', 'good', 'great', 'large', 'small', 'right', 'left', 'new', 'old', 'high', 'low', 'next', 'early', 'late', 'much', 'many', 'few', 'little', 'more', 'most', 'less', 'least', 'enough', 'quite', 'rather', 'too', 'very', 'really', 'almost', 'already', 'always', 'never', 'sometimes', 'often', 'usually', 'probably', 'perhaps', 'maybe', 'certainly', 'surely', 'definitely', 'absolutely'}
+    # Comprehensive stop words list for thematic analysis
+    # Basic function words
+    basic_stop_words = {
+        'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'a', 'an', 
+        'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 
+        'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'shall', 'this', 
+        'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 
+        'her', 'us', 'them', 'my', 'your', 'his', 'their', 'our', 'its', 'as', 'so', 'if', 
+        'when', 'where', 'why', 'how', 'what', 'who', 'which', 'than', 'then', 'now', 'here', 
+        'there', 'up', 'down', 'out', 'off', 'over', 'under', 'again', 'further', 'once', 
+        'more', 'most', 'other', 'some', 'any', 'each', 'every', 'all', 'both', 'few', 'many', 
+        'much', 'several', 'such', 'no', 'not', 'only', 'own', 'same', 'very', 'just', 'even', 
+        'also', 'still', 'well', 'first', 'last', 'long', 'little', 'good', 'great', 'large', 
+        'small', 'right', 'left', 'new', 'old', 'high', 'low', 'next', 'early', 'late', 'much', 
+        'many', 'few', 'little', 'more', 'most', 'less', 'least', 'enough', 'quite', 'rather', 
+        'too', 'very', 'really', 'almost', 'already', 'always', 'never', 'sometimes', 'often', 
+        'usually', 'probably', 'perhaps', 'maybe', 'certainly', 'surely', 'definitely', 'absolutely'
+    }
+    
+    # Book-specific and literary stop words
+    book_stop_words = {
+        'chapter', 'page', 'book', 'story', 'tale', 'text', 'author', 'writer', 'novel', 'volume',
+        'part', 'section', 'paragraph', 'line', 'verse', 'passage', 'excerpt', 'quote', 'said', 
+        'says', 'tell', 'told', 'asked', 'replied', 'answered', 'spoke', 'voice', 'word', 'words',
+        'look', 'looked', 'see', 'saw', 'seen', 'eyes', 'face', 'hand', 'hands', 'head', 'way',
+        'time', 'day', 'night', 'year', 'moment', 'place', 'room', 'house', 'door', 'window',
+        'came', 'come', 'go', 'went', 'gone', 'get', 'got', 'give', 'gave', 'take', 'took', 'taken',
+        'know', 'knew', 'think', 'thought', 'feel', 'felt', 'hear', 'heard', 'find', 'found',
+        'turn', 'turned', 'walk', 'walked', 'run', 'ran', 'stand', 'stood', 'sit', 'sat',
+        'put', 'set', 'let', 'made', 'make', 'call', 'called', 'keep', 'kept', 'leave', 'left'
+    }
+    
+    # Combine all stop words
+    stop_words = basic_stop_words | book_stop_words
     
     # Filter meaningful words and count them
     word_count = {}
     for word in words:
-        if word not in stop_words and len(word) > 2:  # Skip short words
+        # Enhanced filtering for thematic relevance
+        if (word not in stop_words and 
+            len(word) > 2 and  # Skip short words
+            not word.isdigit() and  # Skip pure numbers
+            not (len(word) == 3 and word.endswith('ing')) and  # Skip short -ing words
+            word not in ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']):  # Skip number words
             word_count[word] = word_count.get(word, 0) + 1
     
     # Sort by frequency and return top words
