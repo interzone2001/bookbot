@@ -229,3 +229,293 @@ def generate_ascii_wordcloud(book, width=90, height=25):
     
     return '\n'.join(result)
 
+def generate_book_cover(book, width=80, height=30):
+    """Generate an ASCII art book cover with decorative borders and metadata"""
+    import re
+    from textwrap import wrap
+    
+    # Extract metadata from Project Gutenberg header
+    metadata = extract_book_metadata(book)
+    
+    lines = []
+    
+    # Top decorative border
+    lines.append("╔" + "═" * (width-2) + "╗")
+    lines.append("║" + "░" * (width-2) + "║")
+    
+    # Title section with double borders
+    title = metadata.get('title', 'Unknown Title')
+    subtitle = metadata.get('subtitle', '')
+    
+    # Title processing - handle long titles
+    title_lines = wrap_text_for_width(title.upper(), width - 6)
+    
+    lines.append("║" + " " * (width-2) + "║")
+    for title_line in title_lines:
+        lines.append("║" + title_line.center(width-2) + "║")
+    
+    if subtitle:
+        lines.append("║" + " " * (width-2) + "║")
+        subtitle_lines = wrap_text_for_width(subtitle.upper(), width - 6)
+        for sub_line in subtitle_lines:
+            lines.append("║" + sub_line.center(width-2) + "║")
+    
+    # Decorative separator
+    lines.append("║" + " " * (width-2) + "║")
+    lines.append("║" + "▓" * (width-2) + "║")
+    lines.append("║" + " " * (width-2) + "║")
+    
+    # Author section
+    author = metadata.get('author', 'Unknown Author')
+    lines.append("║" + f"BY {author.upper()}".center(width-2) + "║")
+    
+    # Middle decorative section with thematic elements
+    lines.append("║" + " " * (width-2) + "║")
+    
+    # Add thematic ASCII art based on key words from the book
+    themes = get_book_themes(book)
+    if themes:
+        # Add label for thematic elements
+        lines.append("║" + "~ KEY THEMES ~".center(width-2) + "║")
+        lines.append("║" + " " * (width-2) + "║")
+    
+    thematic_art = generate_thematic_ascii_art(themes, width-4)
+    for art_line in thematic_art:
+        lines.append("║ " + art_line + " ║")
+    
+    # Publication info
+    lines.append("║" + " " * (width-2) + "║")
+    pub_year = metadata.get('year', '')
+    if pub_year:
+        lines.append("║" + f"PUBLISHED {pub_year}".center(width-2) + "║")
+    
+    # Bottom decorative border
+    lines.append("║" + "░" * (width-2) + "║")
+    lines.append("╚" + "═" * (width-2) + "╝")
+    
+    # Add ornamental corners and flourishes
+    result = []
+    for i, line in enumerate(lines):
+        if i == 0 or i == len(lines) - 1:
+            # Top and bottom get extra decoration
+            result.append("  " + line + "  ")
+        else:
+            result.append("  " + line + "  ")
+    
+    return '\n'.join(result)
+
+def extract_book_metadata(book):
+    """Extract title, author, and other metadata from Project Gutenberg format"""
+    import re
+    
+    metadata = {}
+    
+    # Extract title (look for "Title:" line)
+    title_match = re.search(r'Title:\s*(.+?)(?:\n|$)', book, re.IGNORECASE)
+    if title_match:
+        full_title = title_match.group(1).strip()
+        # Handle subtitles separated by semicolon, "or", etc.
+        if ';' in full_title or ' or ' in full_title.lower():
+            parts = re.split(r'[;]|\s+or\s+', full_title, 1, re.IGNORECASE)
+            metadata['title'] = parts[0].strip()
+            if len(parts) > 1:
+                metadata['subtitle'] = parts[1].strip()
+        else:
+            metadata['title'] = full_title
+    
+    # Extract author
+    author_match = re.search(r'Author:\s*(.+?)(?:\n|$)', book, re.IGNORECASE)
+    if author_match:
+        metadata['author'] = author_match.group(1).strip()
+    
+    # Extract publication year
+    year_match = re.search(r'Original publication:.*?(\d{4})', book, re.IGNORECASE)
+    if year_match:
+        metadata['year'] = year_match.group(1)
+    
+    return metadata
+
+def wrap_text_for_width(text, max_width):
+    """Wrap text to fit within specified width"""
+    if len(text) <= max_width:
+        return [text]
+    
+    words = text.split()
+    lines = []
+    current_line = []
+    current_length = 0
+    
+    for word in words:
+        if current_length + len(word) + len(current_line) <= max_width:
+            current_line.append(word)
+            current_length += len(word)
+        else:
+            if current_line:
+                lines.append(' '.join(current_line))
+            current_line = [word]
+            current_length = len(word)
+    
+    if current_line:
+        lines.append(' '.join(current_line))
+    
+    return lines
+
+def get_book_themes(book):
+    """Extract key thematic words for decorative elements"""
+    # Use our existing word analysis but focus on evocative terms
+    top_words = get_top_words(book, 15)  # Get more words to choose from
+    
+    # Filter for thematic/atmospheric words
+    thematic_words = []
+    atmospheric_terms = {
+        'love', 'death', 'life', 'heart', 'soul', 'dark', 'light', 'night', 'day',
+        'fear', 'hope', 'dream', 'mystery', 'magic', 'power', 'beauty', 'truth',
+        'journey', 'adventure', 'destiny', 'fate', 'honor', 'courage', 'passion',
+        'freedom', 'justice', 'revenge', 'betrayal', 'sacrifice', 'glory', 'wisdom',
+        'nature', 'ocean', 'sea', 'storm', 'thunder', 'lightning', 'fire', 'water',
+        'blood', 'battle', 'war', 'peace', 'victory', 'defeat', 'hero', 'villain'
+    }
+    
+    # Words to avoid even if they're long
+    avoid_words = {
+        'though', 'through', 'thought', 'before', 'between', 'another', 'without',
+        'within', 'during', 'because', 'however', 'therefore', 'although', 'while',
+        'where', 'which', 'should', 'would', 'could', 'might', 'never', 'always',
+        'something', 'nothing', 'everything', 'anything', 'someone', 'anyone',
+        'everyone', 'myself', 'himself', 'herself', 'itself', 'ourselves', 'themselves'
+    }
+    
+    for word, freq in top_words:
+        word_lower = word.lower()
+        # Must be atmospheric OR (long AND not a function word AND proper noun-like)
+        if (word_lower in atmospheric_terms or 
+            (len(word) >= 6 and 
+             word_lower not in avoid_words and
+             word[0].isupper())):  # Prefer proper nouns for themes
+            thematic_words.append(word.upper())
+            if len(thematic_words) >= 3:
+                break
+    
+    return thematic_words
+
+def generate_thematic_ascii_art(themes, width):
+    """Generate decorative ASCII art based on book themes with beautiful motifs"""
+    import random
+    lines = []
+    
+    if not themes:
+        # Beautiful default patterns - rotate through different styles
+        pattern_choice = random.choice([1, 2, 3, 4])
+        
+        if pattern_choice == 1:
+            # Elegant vine pattern
+            border = "⟨" + "═" * (width-4) + "⟩"
+            vine = "❦ " + "◦ ❀ ◦ " * ((width-6)//6) + " ❦"
+            lines.append(border.center(width))
+            lines.append(vine.center(width))
+            lines.append(border.center(width))
+        elif pattern_choice == 2:
+            # Art deco style
+            deco1 = "▼" * (width//2) + "▲" * (width//2)
+            deco2 = "◆ ❖ " * (width//4)
+            deco3 = "▲" * (width//2) + "▼" * (width//2)
+            lines.append(deco1[:width].center(width))
+            lines.append(deco2[:width].center(width))
+            lines.append(deco3[:width].center(width))
+        elif pattern_choice == 3:
+            # Classical ornamental
+            ornament_line = "❋ ◇ ❋ ◇ ❋ ◇ ❋"
+            lines.append(ornament_line.center(width))
+            lines.append("⬥" + "─" * (width-2) + "⬥")
+            lines.append(ornament_line.center(width))
+        else:
+            # Flourish pattern
+            lines.append("✧･ﾟ: *✧･ﾟ:* *:･ﾟ✧*:･ﾟ✧".center(width))
+            lines.append("◈ ◈ ◈ ◈ ◈ ◈ ◈".center(width))
+            lines.append("✧･ﾟ: *✧･ﾟ:* *:･ﾟ✧*:･ﾟ✧".center(width))
+        
+        return lines
+    
+    # Create beautiful thematic displays
+    if len(themes) >= 1:
+        # Choose decorative style based on theme content
+        style = choose_decorative_style(themes)
+        
+        if style == "nature":
+            lines.append("❀ ❀ ❀ ❀ ❀ ❀ ❀ ❀".center(width))
+            theme_line = " 🌿 ".join(themes[:3])
+            lines.append(theme_line.center(width))
+            lines.append("❀ ❀ ❀ ❀ ❀ ❀ ❀ ❀".center(width))
+        elif style == "maritime":
+            # Simple, clean maritime pattern with manual centering
+            wave_pattern = "⚓ ≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈ ⚓"
+            lines.append(center_text_precisely(wave_pattern, width))
+            theme_line = " ⚓ ".join(themes[:3])
+            lines.append(center_text_precisely(theme_line, width))
+            lines.append(center_text_precisely(wave_pattern, width))
+        elif style == "gothic":
+            lines.append("⚜ ❦ ⚜ ❦ ⚜ ❦ ⚜".center(width))
+            theme_line = " ❦ ".join(themes[:3])
+            lines.append(theme_line.center(width))
+            lines.append("⚜ ❦ ⚜ ❦ ⚜ ❦ ⚜".center(width))
+        elif style == "celestial":
+            lines.append("✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧".center(width))
+            theme_line = " ✦ ".join(themes[:3])
+            lines.append(theme_line.center(width))
+            lines.append("✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧".center(width))
+        else:
+            # Classic elegant
+            lines.append("◆ ◇ ❖ ◇ ◆ ◇ ❖ ◇".center(width))
+            theme_line = " ◆ ".join(themes[:3])
+            lines.append(theme_line.center(width))
+            lines.append("◆ ◇ ❖ ◇ ◆ ◇ ❖ ◇".center(width))
+    
+    # Add decorative frame
+    frame_line = "═" * width
+    lines.append(frame_line)
+    
+    # Beautiful ornamental footer
+    footer_patterns = [
+        "◊ ◈ ◊ ◈ ◊ ◈ ◊",
+        "❋ ❀ ❋ ❀ ❋ ❀ ❋", 
+        "⟡ ⟢ ⟡ ⟢ ⟡ ⟢ ⟡",
+        "✧ ❖ ✧ ❖ ✧ ❖ ✧"
+    ]
+    footer = random.choice(footer_patterns)
+    lines.append(footer.center(width))
+    
+    return lines
+
+def center_text_precisely(text, total_width):
+    """Center text with precise padding calculation to avoid shift issues"""
+    text_length = len(text)
+    if text_length >= total_width:
+        return text[:total_width]
+    
+    # Calculate padding needed
+    padding_needed = total_width - text_length
+    left_padding = padding_needed // 2
+    right_padding = padding_needed - left_padding
+    
+    return " " * left_padding + text + " " * right_padding
+
+def choose_decorative_style(themes):
+    """Choose decorative style based on thematic content"""
+    theme_text = " ".join(themes).lower()
+    
+    nature_words = ["life", "nature", "forest", "tree", "flower", "garden"]
+    maritime_words = ["sea", "ocean", "water", "wave", "storm", "ship"]
+    gothic_words = ["death", "dark", "blood", "fear", "horror", "mystery"]
+    celestial_words = ["light", "star", "heaven", "dream", "hope", "glory"]
+    
+    if any(word in theme_text for word in nature_words):
+        return "nature"
+    elif any(word in theme_text for word in maritime_words):
+        return "maritime"
+    elif any(word in theme_text for word in gothic_words):
+        return "gothic"
+    elif any(word in theme_text for word in celestial_words):
+        return "celestial"
+    else:
+        return "classic"
+

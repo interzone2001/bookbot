@@ -23,6 +23,9 @@ python3 main.py book.txt --random-sentence
 # Generate ASCII art word cloud
 python3 main.py book.txt --wordcloud
 
+# Generate ASCII art book cover
+python3 main.py book.txt --book-cover
+
 # Output all analysis as JSON
 python3 main.py book.txt --json
 
@@ -45,6 +48,9 @@ python3 main.py book.txt --random-sentence | cowsay
 # Create visual word art
 python3 main.py book.txt --wordcloud > word_art.txt
 
+# Generate beautiful book covers for display
+python3 main.py book.txt --book-cover > book_cover.txt
+
 # Extract specific data with jq
 python3 main.py book.txt --json | jq '.word_count'
 python3 main.py book.txt --json | jq '.character_frequencies.e'
@@ -61,5 +67,6 @@ paste /tmp/count1 /tmp/count2
 - **Character Frequency**: Alphabetical characters sorted by frequency 
 - **Random Sentence**: A randomly selected sentence from the text
 - **ASCII Word Cloud**: Visual representation of most frequent words as ASCII art
+- **ASCII Book Cover**: Beautiful decorative book covers with metadata and themes
 - **JSON Output**: Complete analysis in JSON format for advanced scripting
 - **Pipe-friendly**: Clean output perfect for scripting and automation

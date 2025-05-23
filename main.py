@@ -1,4 +1,4 @@
-from stats import count_words_book, count_characters_book, count_characters_sorted, get_random_sentence, generate_ascii_wordcloud
+from stats import count_words_book, count_characters_book, count_characters_sorted, get_random_sentence, generate_ascii_wordcloud, generate_book_cover
 import sys
 import argparse
 import json
@@ -41,6 +41,10 @@ def output_random_sentence(book):
 def output_wordcloud(book):
     wordcloud = generate_ascii_wordcloud(book)
     print(wordcloud)
+
+def output_book_cover(book):
+    cover = generate_book_cover(book)
+    print(cover)
 
 def output_json(book, book_path):
     num_words = count_words_book(book)
@@ -91,6 +95,7 @@ def main():
     parser.add_argument("--char-count", action="store_true", help="Show character frequency only")
     parser.add_argument("--random-sentence", action="store_true", help="Show random sentence only")
     parser.add_argument("--wordcloud", action="store_true", help="Generate ASCII art word cloud")
+    parser.add_argument("--book-cover", action="store_true", help="Generate ASCII art book cover")
     parser.add_argument("--json", action="store_true", help="Output all analysis as JSON")
     parser.add_argument("--all", action="store_true", help="Show complete analysis (default)")
     
@@ -106,7 +111,7 @@ def main():
         sys.exit(1)
     
     # If no specific flags are set, default to --all
-    if not any([args.word_count, args.char_count, args.random_sentence, args.wordcloud, args.json, args.all]):
+    if not any([args.word_count, args.char_count, args.random_sentence, args.wordcloud, args.book_cover, args.json, args.all]):
         args.all = True
     
     if args.word_count:
@@ -117,6 +122,8 @@ def main():
         output_random_sentence(book)
     elif args.wordcloud:
         output_wordcloud(book)
+    elif args.book_cover:
+        output_book_cover(book)
     elif args.json:
         output_json(book, args.file)
     elif args.all:
