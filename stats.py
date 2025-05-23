@@ -304,6 +304,282 @@ def generate_book_cover(book, width=80, height=30):
     
     return '\n'.join(result)
 
+def extract_smart_quotes(book, min_words=8, max_words=50, count=10, theme_filter=None):
+    """Extract meaningful quotes perfect for a commonplace book"""
+    import re
+    from collections import Counter
+    
+    # Clean the book text (remove Project Gutenberg boilerplate)
+    clean_book = clean_gutenberg_text(book)
+    
+    # Split into sentences with better parsing
+    sentences = extract_sentences(clean_book)
+    
+    # Score each sentence for meaningfulness
+    scored_quotes = []
+    for sentence in sentences:
+        score = score_quote_quality(sentence, clean_book, theme_filter)
+        word_count = len(sentence.split())
+        
+        if (min_words <= word_count <= max_words and 
+            score > 0.3 and  # Minimum quality threshold
+            not is_dialogue_or_mundane(sentence)):
+            
+            scored_quotes.append({
+                'text': sentence.strip(),
+                'score': score,
+                'word_count': word_count,
+                'themes': detect_quote_themes(sentence),
+                'context': get_quote_context(sentence, clean_book)
+            })
+    
+    # Sort by score and return top quotes
+    scored_quotes.sort(key=lambda x: x['score'], reverse=True)
+    return scored_quotes[:count]
+
+def clean_gutenberg_text(book):
+    """Remove Project Gutenberg boilerplate and clean text"""
+    import re
+    
+    # Remove boilerplate
+    start_pattern = r'\*\*\*\s*START OF.*?\*\*\*'
+    end_pattern = r'\*\*\*\s*END OF.*'
+    start_match = re.search(start_pattern, book, re.IGNORECASE | re.DOTALL)
+    end_match = re.search(end_pattern, book, re.IGNORECASE | re.DOTALL)
+    
+    if start_match:
+        book = book[start_match.end():]
+    if end_match:
+        book = book[:end_match.start()]
+    
+    # Remove chapter headers and numbering
+    book = re.sub(r'\n\s*CHAPTER [IVXLC\d]+.*?\n', '\n', book, flags=re.IGNORECASE)
+    book = re.sub(r'\n\s*Chapter [IVXLC\d]+.*?\n', '\n', book, flags=re.IGNORECASE)
+    
+    return book
+
+def extract_sentences(text):
+    """Extract sentences with intelligent parsing and paragraph preservation"""
+    import re
+    
+    # Split on sentence endings but preserve quoted speech and paragraph breaks
+    sentences = re.split(r'(?<=[.!?])\s+(?=[A-Z])', text)
+    
+    # Clean and filter sentences
+    cleaned = []
+    for sentence in sentences:
+        # Preserve paragraph breaks by normalizing to double newlines
+        sentence = re.sub(r'\n\s*\n', ' ¶ ', sentence)  # Mark paragraph breaks
+        # Remove excessive whitespace but preserve paragraph markers
+        sentence = re.sub(r'(?<!¶)\s+', ' ', sentence).strip()
+        
+        # Skip very short or empty sentences
+        if len(sentence) > 20 and len(sentence.split()) >= 4:
+            cleaned.append(sentence)
+    
+    return cleaned
+
+def score_quote_quality(sentence, full_text, theme_filter=None):
+    """Score a sentence for quotability and philosophical depth"""
+    import re
+    from collections import Counter
+    
+    score = 0.0
+    words = sentence.lower().split()
+    
+    # Philosophical/inspirational indicators
+    wisdom_words = {
+        'life', 'death', 'love', 'truth', 'beauty', 'wisdom', 'knowledge', 'power',
+        'freedom', 'justice', 'honor', 'courage', 'hope', 'faith', 'destiny', 'fate',
+        'soul', 'heart', 'mind', 'spirit', 'nature', 'human', 'humanity', 'mankind',
+        'virtue', 'vice', 'good', 'evil', 'right', 'wrong', 'joy', 'sorrow', 'pain',
+        'pleasure', 'happiness', 'misery', 'glory', 'shame', 'pride', 'humility',
+        'passion', 'reason', 'emotion', 'feeling', 'thought', 'dream', 'vision',
+        'purpose', 'meaning', 'existence', 'reality', 'imagination', 'memory'
+    }
+    
+    # Memorable/quotable patterns
+    memorable_patterns = [
+        r'\b(never|always|all|every|nothing|everything)\b',  # Absolutes
+        r'\b(if .+, then .+|when .+, .+)\b',  # Conditional wisdom
+        r'\b(not .+ but .+|more .+ than .+)\b',  # Contrasts
+        r'\b(the .+ of .+)\b',  # Definitive statements
+        r'\b(it is .+|there is .+)\b'  # Declarations
+    ]
+    
+    # Score wisdom words
+    wisdom_count = sum(1 for word in words if word in wisdom_words)
+    score += wisdom_count * 0.3
+    
+    # Score memorable patterns
+    for pattern in memorable_patterns:
+        if re.search(pattern, sentence, re.IGNORECASE):
+            score += 0.4
+    
+    # Bonus for metaphorical language
+    metaphor_indicators = ['like', 'as', 'seems', 'appears', 'resembles', 'mirror', 'echo']
+    if any(word in words for word in metaphor_indicators):
+        score += 0.2
+    
+    # Bonus for emotional depth
+    emotion_words = {
+        'fear', 'terror', 'horror', 'dread', 'anxiety', 'despair', 'anguish', 'agony',
+        'ecstasy', 'bliss', 'rapture', 'delight', 'wonder', 'awe', 'admiration',
+        'contempt', 'disgust', 'rage', 'fury', 'wrath', 'envy', 'jealousy', 'revenge'
+    }
+    emotion_count = sum(1 for word in words if word in emotion_words)
+    score += emotion_count * 0.25
+    
+    # Penalty for overly simple language
+    simple_words = {'the', 'and', 'but', 'or', 'so', 'very', 'just', 'only', 'really'}
+    simple_ratio = sum(1 for word in words if word in simple_words) / len(words)
+    if simple_ratio > 0.4:
+        score -= 0.3
+    
+    # Bonus for sentence structure complexity
+    if ';' in sentence or ':' in sentence:
+        score += 0.2
+    
+    # Theme filtering
+    if theme_filter:
+        theme_words = get_theme_words(theme_filter)
+        if any(word in words for word in theme_words):
+            score += 0.5
+        else:
+            score *= 0.3  # Reduce score if doesn't match theme
+    
+    return max(0.0, score)
+
+def is_dialogue_or_mundane(sentence):
+    """Filter out dialogue and mundane statements"""
+    import re
+    
+    # Skip obvious dialogue
+    if (sentence.count('"') >= 2 or 
+        sentence.count("'") >= 2 or
+        re.search(r'\bsaid\b|\btold\b|\basked\b|\breplied\b', sentence, re.IGNORECASE)):
+        return True
+    
+    # Skip mundane statements
+    mundane_patterns = [
+        r'\b(went to|came to|walked to|returned to)\b',
+        r'\b(in the morning|in the evening|at night|yesterday|tomorrow)\b',
+        r'\b(opened the door|closed the|entered the|left the)\b',
+        r'\b(looked at|turned to|saw that|noticed that)\b'
+    ]
+    
+    for pattern in mundane_patterns:
+        if re.search(pattern, sentence, re.IGNORECASE):
+            return True
+    
+    return False
+
+def detect_quote_themes(sentence):
+    """Detect thematic categories for the quote"""
+    themes = []
+    words = sentence.lower()
+    
+    theme_categories = {
+        'love': ['love', 'heart', 'affection', 'devotion', 'passion', 'romance'],
+        'death': ['death', 'die', 'grave', 'mortality', 'perish', 'expire'],
+        'wisdom': ['wisdom', 'knowledge', 'learn', 'understand', 'truth', 'insight'],
+        'nature': ['nature', 'earth', 'sky', 'sea', 'mountain', 'forest', 'flower'],
+        'power': ['power', 'strength', 'force', 'control', 'command', 'authority'],
+        'freedom': ['freedom', 'liberty', 'independence', 'escape', 'release'],
+        'justice': ['justice', 'right', 'wrong', 'fair', 'law', 'moral', 'virtue'],
+        'hope': ['hope', 'faith', 'believe', 'trust', 'optimism', 'future'],
+        'fear': ['fear', 'terror', 'horror', 'dread', 'anxiety', 'worry'],
+        'beauty': ['beauty', 'beautiful', 'lovely', 'elegant', 'graceful', 'sublime']
+    }
+    
+    for theme, keywords in theme_categories.items():
+        if any(keyword in words for keyword in keywords):
+            themes.append(theme)
+    
+    return themes if themes else ['general']
+
+def get_quote_context(sentence, full_text):
+    """Get contextual information about where the quote appears"""
+    # Find approximate location in text
+    position = full_text.find(sentence[:50])  # Match beginning of sentence
+    total_length = len(full_text)
+    
+    if position >= 0:
+        percentage = int((position / total_length) * 100)
+        if percentage < 25:
+            return "early"
+        elif percentage < 75:
+            return "middle"
+        else:
+            return "late"
+    
+    return "unknown"
+
+def get_theme_words(theme):
+    """Get keywords for theme filtering"""
+    theme_words = {
+        'love': ['love', 'heart', 'affection', 'devotion', 'passion', 'romance', 'beloved'],
+        'death': ['death', 'die', 'grave', 'mortality', 'perish', 'expire', 'funeral'],
+        'wisdom': ['wisdom', 'knowledge', 'learn', 'understand', 'truth', 'insight', 'philosophy'],
+        'nature': ['nature', 'earth', 'sky', 'sea', 'mountain', 'forest', 'flower', 'natural'],
+        'power': ['power', 'strength', 'force', 'control', 'command', 'authority', 'might'],
+        'freedom': ['freedom', 'liberty', 'independence', 'escape', 'release', 'free'],
+        'justice': ['justice', 'right', 'wrong', 'fair', 'law', 'moral', 'virtue', 'honor'],
+        'hope': ['hope', 'faith', 'believe', 'trust', 'optimism', 'future', 'dream'],
+        'fear': ['fear', 'terror', 'horror', 'dread', 'anxiety', 'worry', 'afraid'],
+        'beauty': ['beauty', 'beautiful', 'lovely', 'elegant', 'graceful', 'sublime', 'magnificent']
+    }
+    
+    return theme_words.get(theme.lower(), [])
+
+def get_random_meaningful_quote(book, min_words=8, max_words=50, theme_filter=None):
+    """Get a single random meaningful quote - perfect for daily inspiration"""
+    import random
+    
+    # Get a larger pool of quality quotes to choose from
+    quotes = extract_smart_quotes(book, min_words, max_words, count=50, theme_filter=theme_filter)
+    
+    if not quotes:
+        return None
+    
+    # For random selection, we want some variety in quality levels
+    # Weight towards higher quality but allow some serendipity
+    weights = []
+    for quote in quotes:
+        # Higher scores get higher weight, but even lower scores have a chance
+        weight = max(1, int(quote['score'] * 10))  # Convert score to weight
+        weights.append(weight)
+    
+    # Weighted random selection
+    selected_quote = random.choices(quotes, weights=weights, k=1)[0]
+    return selected_quote
+
+def format_quote_for_display(quote_text, width=80):
+    """Format a quote with proper line breaks and paragraph spacing"""
+    import textwrap
+    
+    # Handle paragraph breaks marked with ¶
+    if ' ¶ ' in quote_text:
+        paragraphs = quote_text.split(' ¶ ')
+        formatted_paragraphs = []
+        
+        for paragraph in paragraphs:
+            paragraph = paragraph.strip()
+            if paragraph:
+                # Wrap each paragraph
+                wrapped = textwrap.fill(paragraph, width=width, 
+                                      break_long_words=False, 
+                                      break_on_hyphens=True)
+                formatted_paragraphs.append(wrapped)
+        
+        # Join paragraphs with double line breaks
+        return '\n\n'.join(formatted_paragraphs)
+    else:
+        # Single paragraph - just wrap
+        return textwrap.fill(quote_text, width=width, 
+                           break_long_words=False, 
+                           break_on_hyphens=True)
+
 def extract_book_metadata(book):
     """Extract title, author, and other metadata from Project Gutenberg format"""
     import re

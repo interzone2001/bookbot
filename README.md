@@ -26,6 +26,12 @@ python3 main.py book.txt --wordcloud
 # Generate ASCII art book cover
 python3 main.py book.txt --book-cover
 
+# Extract meaningful quotes for commonplace book
+python3 main.py book.txt --quotes
+
+# Get a random meaningful quote (perfect for daily inspiration)
+python3 main.py book.txt --random-quote
+
 # Output all analysis as JSON
 python3 main.py book.txt --json
 
@@ -51,6 +57,16 @@ python3 main.py book.txt --wordcloud > word_art.txt
 # Generate beautiful book covers for display
 python3 main.py book.txt --book-cover > book_cover.txt
 
+# Build your commonplace book with meaningful quotes
+python3 main.py book.txt --quotes --theme=wisdom --count=5
+python3 main.py book.txt --quotes --format=json | jq -r '.[].text'
+python3 main.py book.txt --quotes --format=csv > quotes.csv
+
+# Daily inspiration with random quotes
+python3 main.py book.txt --random-quote --theme=hope
+python3 main.py book.txt --random-quote | cowsay
+echo "alias daily-wisdom='python3 main.py books/frankenstein.txt --random-quote'" >> ~/.bashrc
+
 # Extract specific data with jq
 python3 main.py book.txt --json | jq '.word_count'
 python3 main.py book.txt --json | jq '.character_frequencies.e'
@@ -68,5 +84,9 @@ paste /tmp/count1 /tmp/count2
 - **Random Sentence**: A randomly selected sentence from the text
 - **ASCII Word Cloud**: Visual representation of most frequent words as ASCII art
 - **ASCII Book Cover**: Beautiful decorative book covers with metadata and themes
+- **Smart Quote Extraction**: Meaningful passages perfect for commonplace books
+- **Random Quote Generator**: Daily inspiration with intelligent quote selection
+- **Theme Filtering**: Extract quotes by topic (love, death, wisdom, nature, etc.)
+- **Multiple Output Formats**: Text, JSON, and CSV for maximum flexibility
 - **JSON Output**: Complete analysis in JSON format for advanced scripting
 - **Pipe-friendly**: Clean output perfect for scripting and automation
